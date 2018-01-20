@@ -1,4 +1,5 @@
 import csv
+import sys
 import urllib.request
 import urllib.parse
 
@@ -41,8 +42,6 @@ def loopyloop():
     global session_user_logged
     global session_user_id
 
-    #print(session_is_logged + " ; " + session_user_logged + " ; " + session_user_id)
-
     session_timeout_tick()
 
     id_type = what_is(raw_id)
@@ -50,7 +49,6 @@ def loopyloop():
     if (id_type == "usr-raw"):
         session_timeout_reset()
         usrid = get_fit_id(raw_id)
-        #print("User " + who_is(session_user_logged) + " just logged in with ID: " + str(session_user_logged[0:3]) + " " + str(session_user_logged[3:6]) + " " + str(session_user_logged[6:9]))
         if (session_active()):
             session_log_out(usrid)
         else:
@@ -68,7 +66,10 @@ def loopyloop():
     elif (id_type == "eqp"):
         if (session_active()):
             session_timeout_reset()
-            check_out(raw_id)
+            if (eqp_exists(raw_id)):
+                check_out(raw_id)
+            else:
+                error("No such ID", "The scanned ID does not exist.")
             id_scan.value = ""
         else:
             error("Not logged in!", "Please log in prior to scanning equipment!")
@@ -140,9 +141,9 @@ def session_timeout_reset():
 
 def check_out(eqpid):
 	
-    print(eqp_what_is(eqpid))
+    print(eqp_available(eqpid))
     webhook = url + "?value1=" + who_is(session_user_logged) + "&value2=" + eqp_what_is(eqpid) + " (" + eqpid + ")" + "&value3=" + "I/O"
-    #webhook = 'https://maker.ifttt.com/trigger/fitv_equip_log/with/key/bw9CXnOD2nsTte7e7ZL2NW?value1=testuser&value2=testeqp&value3=io'
+    #https://maker.ifttt.com/trigger/fitv_equip_log/with/key/bw9CXnOD2nsTte7e7ZL2NW?value1=testuser&value2=testeqp&value3=io
     webhook_parsed = webhook.replace(' ', '%20')
     print("Hailing " + webhook_parsed)
     f = urllib.request.urlopen(webhook_parsed)
@@ -198,6 +199,24 @@ def eqp_what_is(id):
 				y = len(x)-20
 				return x[28:y]
 				
+def eqp_exists(id):
+    with open('db/inventory.csv', newline='') as csvfile:
+        eqprd = csv.reader(csvfile)
+        for row in eqprd:
+            x = ','.join(row)
+            if str(id) in x:
+                return 1
+        return 0
+
+def eqp_available(id):
+    with open('db/inventory.csv', newline='') as csvfile:
+        eqprd = csv.reader(csvfile)
+        for row in eqprd:
+            x = ','.join(row)
+            if str(id) in x:
+                if (x[8:17] == "#########"):
+                    return 1
+        return 0
 
 ### CONVERT AND PARSE
 def get_fit_id(rawid):
@@ -211,8 +230,10 @@ def get_fit_id(rawid):
 
 ### RUN COMMANDS
 def execute(cmd):
-	
-	return 0
+    if (cmd == "$ext"):
+        sys.exit(0)
+
+    return 0
 
 
 ### PYTHON3 BS

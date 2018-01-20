@@ -21,9 +21,6 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="func.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="LogPy.py" />
   </ItemGroup>
   <ItemGroup>
