@@ -3,7 +3,7 @@ import csv
 from guizero import App, Text, TextBox, Picture, info, PushButton, Box, error
 
 # UI MODULES
-app = App(title="Hello World!", width = 420, height=340)
+app = App(title="Equipment Logger - FITV", width = 420, height=340)
 msg_intro = Text(app, text="Scan ID Card to begin checkout process", size=15)
 msg_intro2 = Text(app, text="or scan Equipment to return", size=15)
 pic = Picture(app, image="img/barcode.png")
