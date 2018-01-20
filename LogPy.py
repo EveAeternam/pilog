@@ -1,4 +1,6 @@
 import csv
+import urllib.request
+import urllib.parse
 
 from guizero import App, Text, TextBox, Picture, info, PushButton, Box, error
 
@@ -10,13 +12,14 @@ pic = Picture(app, image="img/barcode.png")
 id_scan = TextBox(app, width=40)
 
 # GLOBAL VARIABLES
-is_logged = "false"
-user_logged = ""
-user_id = ""
+session_is_logged = "false"
+session_user_logged = ""
+session_user_id = ""
 
 # GLOBAL CONSTANTS
 n=0
 session_timeout=240
+url = 'https://maker.ifttt.com/trigger/fitv_equip_log/with/key/bw9CXnOD2nsTte7e7ZL2NW'
 
 ####
 
@@ -29,92 +32,144 @@ def main():
 	
 	return 0
 	
+### ACTUALLY THE MAIN LOOP
+
 def loopyloop():
 	
-	raw_id = id_scan.value
-	global n
-	global user_logged
-	global user_id
+    raw_id = id_scan.value
+    
+    global session_user_logged
+    global session_user_id
+
+    #print(session_is_logged + " ; " + session_user_logged + " ; " + session_user_id)
+
+    session_timeout_tick()
+
+    id_type = what_is(raw_id)
+
+    if (id_type == "usr-raw"):
+        session_timeout_reset()
+        usrid = get_fit_id(raw_id)
+        #print("User " + who_is(session_user_logged) + " just logged in with ID: " + str(session_user_logged[0:3]) + " " + str(session_user_logged[3:6]) + " " + str(session_user_logged[6:9]))
+        if (session_active()):
+            session_log_out(usrid)
+        else:
+            session_log_in(usrid)
+    elif (id_type == "usr"):
+        session_timeout_reset()
+        usrid = raw_id
+        if (session_active()):
+            session_log_out(usrid)
+        else:
+            session_log_in(usrid)
+    elif (id_type == "cmd"):
+        session_timeout_reset()
+        execute(raw_id)
+    elif (id_type == "eqp"):
+        if (session_active()):
+            session_timeout_reset()
+            check_out(raw_id)
+            id_scan.value = ""
+        else:
+            error("Not logged in!", "Please log in prior to scanning equipment!")
+            id_scan.value = ""
+
+    app.after(1000, loopyloop)
+
+### SESSIONS
+
+def session_log_in(id):
+    global session_user_logged
+    global session_is_logged
+
+    if (session_is_logged == "false"):
+        print("Logging in user: " + who_is(id))
+        msg_intro.value = "Logged in as:"
+        msg_intro2.value = who_is(id)
+        pic.value = "usr/" + id + ".png"
+        id_scan.value = ""
+        session_is_logged = "true"
+        session_user_logged = id
+    else:
+        print("Warning: Tried logging in while session was active.")
+
+    return 0
+
+def session_log_out(id):
+    global session_user_logged
+    global session_is_logged
+
+    if (session_is_logged == "true"):
+        print("Logging out user: " + who_is(id))
+        msg_intro.value = "Scan ID Card to begin checkout process"
+        msg_intro2.value = "or scan Equipment to return"
+        pic.value = "img/barcode.png"
+        id_scan.value = ""
+        session_is_logged = "false"
+        session_user_logged = ""
+        info("Logged out!", who_is(id) + " has successfully logged out!")
+    else:
+        print("Warning: Tried logging out while no session was active.")
+
+    return 0
+
+def session_active():
+    if (session_is_logged == "true"):
+        return 1
+    else:
+        return 0
+
+def session_timeout_tick():
+    global n
+
+    if (session_active()):
+        n += 1
+
+    if (n==session_timeout):
+        loguser(session_user_logged)
+        print("SESSION TIMEOUT")
+        n=0
+    return 0
+
+def session_timeout_reset():
+    global n
+    n=0
+    return 0
+
+### EQUIPMENT LOGGING
+
+def check_out(eqpid):
 	
-	print(is_logged + " ; " + user_logged + " ; " + user_id)
-	
-	if (is_logged == "true"):
-		n += 1
-		
-	if (n==session_timeout):
-		loguser(user_logged)
-		print("SESSION TIMEOUT")
-		n=0
-	
-	if (what_is(raw_id) == "usr-raw"):
-		user_id = get_fit_id(raw_id)
-		user_logged = who_is(user_id)
-		print("User " + user_logged + " just logged in with ID: " + str(user_id[0:3]) + " " + str(user_id[3:6]) + " " + str(user_id[6:9]))
-		loguser(user_logged)
-	if (what_is(raw_id) == "usr"):
-		user_id = raw_id
-		user_logged = who_is(user_id)
-		print("User " + user_logged + " just logged in with ID: " + str(user_id[0:3]) + " " + str(user_id[3:6]) + " " + str(user_id[6:9]))
-		loguser(user_logged)
-	elif (what_is(raw_id) == "cmd"):
-		execute(raw_id)
-	elif (what_is(raw_id) == "eqp"):
-		if (is_logged == "true"):
-			print(eqp_what_is(raw_id))
-		else:
-			error("Not logged in!", "Please log in prior to scanning equipment!")
-			id_scan.value = ""
-	
-	app.after(1000, loopyloop)
-	
-def loguser(usr):
-	global is_logged
-	global user_logged
-	global user_id
-	is_usr_logged = is_logged
-	
-	if (is_usr_logged == "false"):
-		print(usr+" just logged in!")
-		msg_intro.value = "Logged in as:"
-		msg_intro2.value = usr
-		pic.value = "usr/" + get_id(usr) + ".png"
-		id_scan.value = ""
-		is_logged = "true"
-	else:
-		print(user_logged+" just logged out!")
-		msg_intro.value = "Scan ID Card to begin checkout process"
-		msg_intro2.value = "or scan Equipment to return"
-		pic.value = "img/barcode.png"
-		id_scan.value = ""
-		is_logged = "false"
-		user_logged = ""
-		user_id = ""
-		info("Logged out!", usr + " has successfully logged out!")
-	
-	return 0
-	
-def logged(txt):
-	
-	print("ID: " + str(txt) + " logged")
-	#Curl here
-	
-	return 0
-	
+    print(eqp_what_is(eqpid))
+    webhook = url + "?value1=" + who_is(session_user_logged) + "&value2=" + eqp_what_is(eqpid) + " (" + eqpid + ")" + "&value3=" + "I/O"
+    #webhook = 'https://maker.ifttt.com/trigger/fitv_equip_log/with/key/bw9CXnOD2nsTte7e7ZL2NW?value1=testuser&value2=testeqp&value3=io'
+    webhook_parsed = webhook.replace(' ', '%20')
+    print("Hailing " + webhook_parsed)
+    f = urllib.request.urlopen(webhook_parsed)
+    print(f.read().decode('utf-8'))
+    msg_intro.value = "Checked out:"
+    msg_intro2.value = eqp_what_is(eqpid)
+    pic.value = "eqp/" + eqpid + ".png"
+
+    return 0
+
+### IDENTIFY SCANNED CODE
+
 def what_is(val1):
 	
-	id_type=""
+    id_type=""
 
-	if (len(val1) == 16):
-		id_type="usr-raw"
-	elif (len(val1) == 9 and val1[:2] == "90"):
-		id_type="usr"
-	elif (len(val1) == 5):
-		id_type="eqp"
-	else:
-		if ("$" in val1):
-			id_type="cmd"
+    if (len(val1) == 16):
+        id_type="usr-raw"
+    elif (len(val1) == 9 and val1[:2] == "90"):
+        id_type="usr"
+    elif (len(val1) == 5 and not val1[:2] == "90"):
+        id_type="eqp"
+    else:
+        if ("$" in val1):
+            id_type="cmd"
 
-	return id_type
+    return id_type
 
 ### FETCH USER DATA ###
 def who_is(val):
@@ -144,8 +199,7 @@ def eqp_what_is(id):
 				return x[28:y]
 				
 
-
-	
+### CONVERT AND PARSE
 def get_fit_id(rawid):
 	
 	if (len(rawid) == 16):
@@ -154,11 +208,14 @@ def get_fit_id(rawid):
 		fitid = rawid
 	
 	return fitid
-	
+
+### RUN COMMANDS
 def execute(cmd):
 	
 	return 0
 
+
+### PYTHON3 BS
 if __name__ == '__main__':
 	main()
 
