@@ -1,15 +1,19 @@
 import csv
 import sys
+import os
 import urllib.request
 import urllib.parse
 
 from guizero import App, Text, TextBox, Picture, info, PushButton, Box, error
 
+#cwd = os.getcwd()+"/"
+cwd = "/home/pi/pilog/"
+
 # UI MODULES
-app = App(title="Equipment Logger - FITV", width = 420, height=340)
+app = App(title="Equipment Logger - FITV", width = 480, height=320)
 msg_intro = Text(app, text="Scan ID Card to begin checkout process", size=15)
 msg_intro2 = Text(app, text="or scan Equipment to return", size=15)
-pic = Picture(app, image="img/barcode.png")
+pic = Picture(app, image=cwd+"img/barcode.png")
 id_scan = TextBox(app, width=40)
 
 # GLOBAL VARIABLES
@@ -28,7 +32,7 @@ def main():
 	
 	id_scan.focus()
 	app.after(1000, loopyloop)
-	#app.tk.attributes("-fullscreen", True)
+	app.tk.attributes("-fullscreen", True)
 	app.display()
 	
 	return 0
@@ -87,7 +91,7 @@ def session_log_in(id):
         print("Logging in user: " + who_is(id))
         msg_intro.value = "Logged in as:"
         msg_intro2.value = who_is(id)
-        pic.value = "usr/" + id + ".png"
+        pic.value = cwd+"usr/" + id + ".png"
         id_scan.value = ""
         session_is_logged = "true"
         session_user_logged = id
@@ -104,11 +108,11 @@ def session_log_out(id):
         print("Logging out user: " + who_is(id))
         msg_intro.value = "Scan ID Card to begin checkout process"
         msg_intro2.value = "or scan Equipment to return"
-        pic.value = "img/barcode.png"
+        pic.value = cwd+"img/barcode.png"
         id_scan.value = ""
         session_is_logged = "false"
+        info("Logged out!", who_is(session_user_logged) + " has successfully logged out!")
         session_user_logged = ""
-        info("Logged out!", who_is(id) + " has successfully logged out!")
     else:
         print("Warning: Tried logging out while no session was active.")
 
@@ -150,7 +154,7 @@ def check_out(eqpid):
     print(f.read().decode('utf-8'))
     msg_intro.value = "Checked out:"
     msg_intro2.value = eqp_what_is(eqpid)
-    pic.value = "eqp/" + eqpid + ".png"
+    pic.value = cwd+"eqp/" + eqpid + ".png"
 
     return 0
 
@@ -174,7 +178,7 @@ def what_is(val1):
 
 ### FETCH USER DATA ###
 def who_is(val):
-	with open('db/userlist.csv', newline='') as csvfile:
+	with open(cwd+'db/userlist.csv', newline='') as csvfile:
 		usrd = csv.reader(csvfile)
 		for row in usrd:
 			x = ','.join(row)
@@ -182,7 +186,7 @@ def who_is(val):
 				return x[10:]
 
 def get_id(username):
-	with open('db/userlist.csv', newline='') as csvfile:
+	with open(cwd+'db/userlist.csv', newline='') as csvfile:
 		usrd = csv.reader(csvfile)
 		for row in usrd:
 			x = ','.join(row)
@@ -191,7 +195,7 @@ def get_id(username):
 
 ### EQUIPMENT IDENTIFIERS ###				
 def eqp_what_is(id):
-	with open('db/inventory.csv', newline='') as csvfile:
+	with open(cwd+'db/inventory.csv', newline='') as csvfile:
 		eqprd = csv.reader(csvfile)
 		for row in eqprd:
 			x = ','.join(row)
@@ -200,7 +204,7 @@ def eqp_what_is(id):
 				return x[28:y]
 				
 def eqp_exists(id):
-    with open('db/inventory.csv', newline='') as csvfile:
+    with open(cwd+'db/inventory.csv', newline='') as csvfile:
         eqprd = csv.reader(csvfile)
         for row in eqprd:
             x = ','.join(row)
@@ -209,7 +213,7 @@ def eqp_exists(id):
         return 0
 
 def eqp_available(id):
-    with open('db/inventory.csv', newline='') as csvfile:
+    with open(cwd+'db/inventory.csv', newline='') as csvfile:
         eqprd = csv.reader(csvfile)
         for row in eqprd:
             x = ','.join(row)
@@ -226,7 +230,8 @@ def get_fit_id(rawid):
 	elif (len(rawid) == 9):
 		fitid = rawid
 	
-	return fitid
+	return fit
+id
 
 ### RUN COMMANDS
 def execute(cmd):
