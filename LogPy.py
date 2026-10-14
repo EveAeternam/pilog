@@ -24,7 +24,7 @@ session_user_id = ""
 # GLOBAL CONSTANTS
 n=0
 session_timeout=240
-url = 'https://maker.ifttt.com/trigger/fitv_equip_log/with/key/bw9CXnOD2nsTte7e7ZL2NW'
+url = os.environ.get('PILOG_WEBHOOK', '')  # e.g. https://maker.ifttt.com/trigger/<event>/with/key/<key>
 
 ####
 
@@ -147,7 +147,6 @@ def check_out(eqpid):
 	
     print(eqp_available(eqpid))
     webhook = url + "?value1=" + who_is(session_user_logged) + "&value2=" + eqp_what_is(eqpid) + " (" + eqpid + ")" + "&value3=" + "I/O"
-    #https://maker.ifttt.com/trigger/fitv_equip_log/with/key/bw9CXnOD2nsTte7e7ZL2NW?value1=testuser&value2=testeqp&value3=io
     webhook_parsed = webhook.replace(' ', '%20')
     print("Hailing " + webhook_parsed)
     f = urllib.request.urlopen(webhook_parsed)
